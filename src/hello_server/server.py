@@ -1,15 +1,14 @@
 from mcp.server.fastmcp import FastMCP
 from smithery.decorators import smithery
 
-# In-memory storage for the knowledge graph
-knowledge_graph = {
-    "entities": {},
-    "relationships": []
-}
-
 @smithery.server()
 def create_server():
     """Create and configure the MCP server."""
+    # In-memory storage for the knowledge graph
+    knowledge_graph = {
+        "entities": {},
+        "relationships": []
+    }
     print("Creating server...")
     server = FastMCP("Knowledge Graph")
     print("Server created.")
