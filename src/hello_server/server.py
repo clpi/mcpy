@@ -53,13 +53,13 @@ def create_server():
         return f"Relationship '{label}' from '{source_id}' to '{target_id}' added."
 
     @server.tool()
-    def query(query: str) -> str:
+    def query(query_text: str) -> str:
         """Query the knowledge graph."""
-        if query == "list all entities":
+        if query_text == "list all entities":
             return str(list(knowledge_graph["entities"].keys()))
 
-        parts = query.split()
-        if query.startswith("list relationships of"):
+        parts = query_text.split()
+        if query_text.startswith("list relationships of"):
             entity_id = parts[-1]
             if entity_id not in knowledge_graph["entities"]:
                 return f"Entity '{entity_id}' not found."
