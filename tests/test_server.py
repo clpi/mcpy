@@ -37,9 +37,9 @@ async def test_add_entity_success(server):
     assert knowledge_graph["entities"][entity_id]["properties"] == properties
 
     # Also verify the return message is formatted properly
-    # Using string extraction because result format can be complex
-    result_str = str(result)
-    assert f"Entity '{entity_id}' ({label}) added." in result_str
+    # Also verify the return message is formatted properly
+    _, result_dict = result
+    assert result_dict["result"] == f"Entity '{entity_id}' ({label}) added."
 
 @pytest.mark.asyncio
 async def test_add_entity_already_exists(server):
