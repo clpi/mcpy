@@ -59,5 +59,5 @@ async def test_add_entity_already_exists(server):
     assert knowledge_graph["entities"][entity_id]["properties"] == properties
 
     # Verify the error message
-    result_str = str(result)
-    assert f"Entity with id '{entity_id}' already exists." in result_str
+    _, result_dict = result
+    assert result_dict["result"] == f"Entity with id '{entity_id}' already exists."
