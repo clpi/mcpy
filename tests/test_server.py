@@ -3,14 +3,14 @@ from hello_server.server import create_server, knowledge_graph
 
 @pytest.fixture(autouse=True)
 def clear_knowledge_graph():
-    """Clear the knowledge graph before each test to ensure isolation."""
+    """Clear shared graph state before each test for isolation."""
     knowledge_graph["entities"].clear()
     knowledge_graph["relationships"].clear()
     yield
 
 @pytest.fixture
 def server():
-    """Yield a configured server."""
+    """Create a configured server instance for tests."""
     return create_server()
 
 @pytest.mark.asyncio
