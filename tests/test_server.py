@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from hello_server.server import create_server
 from mcp.server.fastmcp import Context
@@ -9,7 +11,7 @@ def server():
 
 @pytest.fixture(scope="function")
 def default_context():
-    return Context("default-session")
+    return Context(str(uuid4()))
 
 def test_query_unknown(server, default_context):
     # Test unrecognized query
