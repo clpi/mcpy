@@ -9,11 +9,8 @@ def create_server():
     session_graphs = {}
     graph_lock = RLock()
 
-    def _session_key(ctx: Context) -> str:
-        return str(ctx.session_id)
-
     def _get_knowledge_graph(ctx: Context) -> dict:
-        session_key = _session_key(ctx)
+        session_key = str(ctx.session_id)
         with graph_lock:
             if session_key not in session_graphs:
                 session_graphs[session_key] = {
