@@ -1,52 +1,52 @@
 import pytest
 from hello_server.server import create_server
-
-
-class DummyContext:
-    def __init__(self, session_id):
-        self.session_id = session_id
+from mcp.server.fastmcp import Context
 
 
 @pytest.fixture
 def server():
     return create_server()
 
-def test_query_unknown(server):
+@pytest.fixture
+def ctx():
+    return Context("default-session")
+
+def test_query_unknown(server, ctx):
     # Test unrecognized query
-    result = server.tools["query"]("random string")
+    result = server.tools["query"]("random string", ctx=ctx)
     assert result == "Unknown query. Try 'list all entities' or 'list relationships of <entity_id>'."
 
-def test_query_list_all_entities(server):
+def test_query_list_all_entities(server, ctx):
     # Setup: add some entities
-    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"})
-    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"})
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=ctx)
+    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"}, ctx=ctx)
 
     # Test list all entities
-    result = server.tools["query"]("list all entities")
+    result = server.tools["query"]("list all entities", ctx=ctx)
     assert "1" in result
     assert "2" in result
 
-def test_query_list_relationships(server):
+def test_query_list_relationships(server, ctx):
     # Setup: add entities and a relationship
-    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"})
-    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"})
-    server.tools["add_relationship"](source_id="1", target_id="2", label="knows", properties={})
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=ctx)
+    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"}, ctx=ctx)
+    server.tools["add_relationship"](source_id="1", target_id="2", label="knows", properties={}, ctx=ctx)
 
     # Test list relationships
-    result = server.tools["query"]("list relationships of 1")
+    result = server.tools["query"]("list relationships of 1", ctx=ctx)
     assert "knows" in result
     assert "1" in result
     assert "2" in result
 
-def test_query_list_relationships_not_found(server):
+def test_query_list_relationships_not_found(server, ctx):
     # Test list relationships for non-existent entity
-    result = server.tools["query"]("list relationships of non_existent")
+    result = server.tools["query"]("list relationships of non_existent", ctx=ctx)
     assert result == "Entity 'non_existent' not found."
 
 
 def test_session_scoped_graph_isolation(server):
-    ctx_a = DummyContext("session-a")
-    ctx_b = DummyContext("session-b")
+    ctx_a = Context("session-a")
+    ctx_b = Context("session-b")
 
     server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=ctx_a)
 

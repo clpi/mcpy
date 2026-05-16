@@ -9,10 +9,10 @@ def create_server():
     session_graphs = {}
     graph_lock = RLock()
 
-    def _session_key(ctx: Context | None) -> str:
-        return str(getattr(ctx, "session_id", "__default__"))
+    def _session_key(ctx: Context) -> str:
+        return str(ctx.session_id)
 
-    def _get_knowledge_graph(ctx: Context | None) -> dict:
+    def _get_knowledge_graph(ctx: Context) -> dict:
         session_key = _session_key(ctx)
         with graph_lock:
             if session_key not in session_graphs:
@@ -28,7 +28,7 @@ def create_server():
     print("Server created.")
 
     @server.tool()
-    def add_entity(id: str, label: str, properties: dict, ctx: Context | None = None) -> str:
+    def add_entity(id: str, label: str, properties: dict, ctx: Context) -> str:
         """Add an entity to the knowledge graph."""
         knowledge_graph = _get_knowledge_graph(ctx)
         with graph_lock:
@@ -40,7 +40,7 @@ def create_server():
         return f"Entity '{id}' ({label}) added."
 
     @server.tool()
-    def add_relationship(source_id: str, target_id: str, label: str, properties: dict, ctx: Context | None = None) -> str:
+    def add_relationship(source_id: str, target_id: str, label: str, properties: dict, ctx: Context) -> str:
         """Add a relationship between two entities."""
         knowledge_graph = _get_knowledge_graph(ctx)
         with graph_lock:
@@ -69,7 +69,7 @@ def create_server():
         return f"Relationship '{label}' from '{source_id}' to '{target_id}' added."
 
     @server.tool()
-    def query(query_text: str, ctx: Context | None = None) -> str:
+    def query(query_text: str, ctx: Context) -> str:
         """Query the knowledge graph."""
         knowledge_graph = _get_knowledge_graph(ctx)
         with graph_lock:
