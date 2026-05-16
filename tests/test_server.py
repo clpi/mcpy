@@ -1,6 +1,12 @@
 import pytest
 from hello_server.server import create_server
 
+
+class DummyContext:
+    def __init__(self, session_id):
+        self.session_id = session_id
+
+
 @pytest.fixture
 def server():
     return create_server()
@@ -36,3 +42,16 @@ def test_query_list_relationships_not_found(server):
     # Test list relationships for non-existent entity
     result = server.tools["query"]("list relationships of non_existent")
     assert result == "Entity 'non_existent' not found."
+
+
+def test_session_scoped_graph_isolation(server):
+    ctx_a = DummyContext("session-a")
+    ctx_b = DummyContext("session-b")
+
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=ctx_a)
+
+    result_a = server.tools["query"]("list all entities", ctx=ctx_a)
+    result_b = server.tools["query"]("list all entities", ctx=ctx_b)
+
+    assert "1" in result_a
+    assert result_b == "[]"

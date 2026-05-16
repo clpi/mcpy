@@ -18,7 +18,12 @@ class MockFastMCP:
     def list_tools(self):
         return list(self.tools.values())
 
+class MockContext:
+    def __init__(self, session_id=None):
+        self.session_id = session_id
+
 fastmcp_module_mock.FastMCP = MockFastMCP
+fastmcp_module_mock.Context = MockContext
 sys.modules["mcp"] = mcp_mock
 sys.modules["mcp.server"] = MagicMock()
 sys.modules["mcp.server.fastmcp"] = fastmcp_module_mock
