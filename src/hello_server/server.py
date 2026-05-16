@@ -9,16 +9,14 @@ def create_server():
     session_graphs = {}
     graph_lock = RLock()
 
-    def _get_knowledge_graph(ctx: Context) -> dict:
-        session_key = str(ctx.session_id)
-        with graph_lock:
-            if session_key not in session_graphs:
-                session_graphs[session_key] = {
-                    "entities": {},
-                    "relationships": [],
-                    "adjacency_list": {}
-                }
-            return session_graphs[session_key]
+    def _get_knowledge_graph(session_key: str) -> dict:
+        if session_key not in session_graphs:
+            session_graphs[session_key] = {
+                "entities": {},
+                "relationships": [],
+                "adjacency_list": {}
+            }
+        return session_graphs[session_key]
 
     print("Creating server...")
     server = FastMCP("Knowledge Graph")
@@ -27,8 +25,9 @@ def create_server():
     @server.tool()
     def add_entity(id: str, label: str, properties: dict, ctx: Context) -> str:
         """Add an entity to the knowledge graph."""
-        knowledge_graph = _get_knowledge_graph(ctx)
+        session_key = str(ctx.session_id)
         with graph_lock:
+            knowledge_graph = _get_knowledge_graph(session_key)
             if id in knowledge_graph["entities"]:
                 return f"Entity with id '{id}' already exists."
             knowledge_graph["entities"][id] = {"label": label, "properties": properties}
@@ -39,8 +38,9 @@ def create_server():
     @server.tool()
     def add_relationship(source_id: str, target_id: str, label: str, properties: dict, ctx: Context) -> str:
         """Add a relationship between two entities."""
-        knowledge_graph = _get_knowledge_graph(ctx)
+        session_key = str(ctx.session_id)
         with graph_lock:
+            knowledge_graph = _get_knowledge_graph(session_key)
             if source_id not in knowledge_graph["entities"]:
                 return f"Source entity '{source_id}' not found."
             if target_id not in knowledge_graph["entities"]:
@@ -68,8 +68,9 @@ def create_server():
     @server.tool()
     def query(query_text: str, ctx: Context) -> str:
         """Query the knowledge graph."""
-        knowledge_graph = _get_knowledge_graph(ctx)
+        session_key = str(ctx.session_id)
         with graph_lock:
+            knowledge_graph = _get_knowledge_graph(session_key)
             if query_text == "list all entities":
                 return str(list(knowledge_graph["entities"].keys()))
 
