@@ -1,63 +1,59 @@
-import pytest
-from hello_server.server import create_server, knowledge_graph
+from uuid import uuid4
 
-@pytest.fixture(autouse=True)
-def clear_knowledge_graph():
-    """Clear shared graph state before each test for isolation."""
-    knowledge_graph["entities"].clear()
-    knowledge_graph["relationships"].clear()
-    yield
+import pytest
+from hello_server.server import create_server
+from mcp.server.fastmcp import Context
+
 
 @pytest.fixture
 def server():
-    """Create a configured server instance for tests."""
     return create_server()
 
-@pytest.mark.asyncio
-async def test_add_entity_success(server):
-    """Test adding a new entity to the knowledge graph."""
-    entity_id = "test-1"
-    label = "TestEntity"
-    properties = {"key": "value"}
+@pytest.fixture(scope="function")
+def default_context():
+    return Context(str(uuid4()))
 
-    # FastMCP server.call_tool returns a tuple.
-    # Example from exploration:
-    # ([TextContent(type='text', text="Entity '1' (Person) added.", annotations=None, meta=None)], {'result': "Entity '1' (Person) added."})
-    # or sometimes we just check the knowledge graph directly depending on the testing approach
+def test_query_unknown(server, default_context):
+    # Test unrecognized query
+    result = server.tools["query"]("random string", ctx=default_context)
+    assert result == "Unknown query. Try 'list all entities' or 'list relationships of <entity_id>'."
 
-    # We will test the inner logic using server.call_tool
-    result = await server.call_tool("add_entity", {"id": entity_id, "label": label, "properties": properties})
+def test_query_list_all_entities(server, default_context):
+    # Setup: add some entities
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=default_context)
+    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"}, ctx=default_context)
 
-    # Check if we get a tuple and extract the actual return value
-    # Since we explored it returns ([TextContent(...)], {'result': '...'})
-    # But to be robust, let's just check the knowledge_graph
+    # Test list all entities
+    result = server.tools["query"]("list all entities", ctx=default_context)
+    assert "1" in result
+    assert "2" in result
 
-    assert entity_id in knowledge_graph["entities"]
-    assert knowledge_graph["entities"][entity_id]["label"] == label
-    assert knowledge_graph["entities"][entity_id]["properties"] == properties
+def test_query_list_relationships(server, default_context):
+    # Setup: add entities and a relationship
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=default_context)
+    server.tools["add_entity"](id="2", label="Person", properties={"name": "Bob"}, ctx=default_context)
+    server.tools["add_relationship"](source_id="1", target_id="2", label="knows", properties={}, ctx=default_context)
 
-    # Also verify the return message is formatted properly
-    # Using string extraction because result format can be complex
-    result_str = str(result)
-    assert f"Entity '{entity_id}' ({label}) added." in result_str
+    # Test list relationships
+    result = server.tools["query"]("list relationships of 1", ctx=default_context)
+    assert "knows" in result
+    assert "1" in result
+    assert "2" in result
 
-@pytest.mark.asyncio
-async def test_add_entity_already_exists(server):
-    """Test adding an entity that already exists."""
-    entity_id = "test-2"
-    label = "TestEntity"
-    properties = {"key": "value"}
+def test_query_list_relationships_not_found(server, default_context):
+    # Test list relationships for non-existent entity
+    result = server.tools["query"]("list relationships of non_existent", ctx=default_context)
+    assert result == "Entity 'non_existent' not found."
 
-    # Add it once
-    await server.call_tool("add_entity", {"id": entity_id, "label": label, "properties": properties})
 
-    # Add it again
-    result = await server.call_tool("add_entity", {"id": entity_id, "label": "AnotherLabel", "properties": {}})
+def test_session_scoped_graph_isolation(server):
+    ctx_a = Context("session-a")
+    ctx_b = Context("session-b")
 
-    # Verify the knowledge graph wasn't modified by the second call
-    assert knowledge_graph["entities"][entity_id]["label"] == label
-    assert knowledge_graph["entities"][entity_id]["properties"] == properties
+    server.tools["add_entity"](id="1", label="Person", properties={"name": "Alice"}, ctx=ctx_a)
 
-    # Verify the error message
-    result_str = str(result)
-    assert f"Entity with id '{entity_id}' already exists." in result_str
+    result_a = server.tools["query"]("list all entities", ctx=ctx_a)
+    result_b = server.tools["query"]("list all entities", ctx=ctx_b)
+
+    assert "1" in result_a
+    assert result_b == "[]"
