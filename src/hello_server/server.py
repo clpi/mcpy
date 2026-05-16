@@ -10,13 +10,14 @@ def create_server():
     graph_lock = RLock()
 
     def _get_knowledge_graph(session_key: str) -> dict:
-        if session_key not in session_graphs:
-            session_graphs[session_key] = {
-                "entities": {},
-                "relationships": [],
-                "adjacency_list": {}
-            }
-        return session_graphs[session_key]
+        with graph_lock:
+            if session_key not in session_graphs:
+                session_graphs[session_key] = {
+                    "entities": {},
+                    "relationships": [],
+                    "adjacency_list": {}
+                }
+            return session_graphs[session_key]
 
     print("Creating server...")
     server = FastMCP("Knowledge Graph")

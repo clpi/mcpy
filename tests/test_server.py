@@ -7,7 +7,7 @@ from mcp.server.fastmcp import Context
 def server():
     return create_server()
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def default_context():
     return Context("default-session")
 
